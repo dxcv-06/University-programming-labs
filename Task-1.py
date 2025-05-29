@@ -1,57 +1,74 @@
-def count_words(text):
-    """
-    Function takes a string and returns a dictionary where keys are unique words
-    and values are the number of their occurrences
-    """
-    # Split text into words, remove punctuation
-    words = text.lower().replace(',', ' ').replace('.', ' ').replace('!', ' ').replace('?', ' ').split()
-    
-    # Create a dictionary for word counting
-    word_count = {}
-    
-    # Count each word
-    for word in words:
-        if word in word_count:
-            word_count[word] += 1
-        else:
-            word_count[word] = 1
-    
-    return word_count
+"""
+Task 1: Log File Analyzer
 
-def get_frequent_words(word_count, min_occurrences=3):
+Function for analyzing HTTP server log files and counting unique response codes
+"""
+import re
+import sys
+
+def analyze_log_file(log_file_path):
     """
-    Function returns a list of words that occur more than the specified number of times
+    Analyzes HTTP server log file and counts the number of unique response codes
+
+    Args:
+        log_file_path (str): path to the HTTP server log file
+
+    Returns:
+        dict: dictionary where key is the response code, value is the number of occurrences
     """
-    return [word for word, count in word_count.items() if count > min_occurrences]
+    # Dictionary to store the results as required by the task
+    # Format: {response_code: count, ...}
+    response_codes = {}
+    
+    try:
+        # Open the file for reading
+        with open(log_file_path, 'r', encoding='utf-8') as file:
+            # Regular expression to find HTTP response codes
+            # Typical Apache log file format: IP - - [date] "GET /path HTTP/1.1" 200 1234
+            pattern = r'\s(\d{3})\s'
+            
+            # Read each line of the file
+            for line in file:
+                # Search for HTTP response code
+                match = re.search(pattern, line)
+                if match:
+                    # Get the response code
+                    response_code = match.group(1)
+                    # Increment the counter for this code
+                    if response_code in response_codes:
+                        response_codes[response_code] += 1
+                    else:
+                        response_codes[response_code] = 1
+                        
+        # Return the dictionary with response codes and their counts
+        return response_codes
+    
+    except FileNotFoundError:
+        print(f"Error: File '{log_file_path}' not found.")
+        return {}
+    except IOError as e:
+        print(f"Error reading file: {e}")
+        return {}
+    except Exception as e:
+        print(f"Unexpected error occurred: {e}")
+        return {}
 
 
+# Example usage
 if __name__ == "__main__":
-    # Default text to use if no input is provided
-    default_text = "This is a default text to check the function. The text contains repetitions of words that the function should count. Text test text function words words."
+    # Default log file path
+    default_log_path = "apache_logs.txt"
     
-    # Get text input from user
-    print("Task 1: Working with text")
-    print("Please enter a text (or press Enter to use default text):")
-    user_input = input()
-    
-    # Use default text if input is empty
-    if not user_input:
-        print("Using default text.")
-        text_sample = default_text
+    # Check if file path is provided as command line argument
+    if len(sys.argv) > 1:
+        log_path = sys.argv[1]
     else:
-        text_sample = user_input
+        log_path = default_log_path
+        print(f"No log file specified, using default: {default_log_path}")
     
-    # Count words and find frequent ones
-    word_counts = count_words(text_sample)
-    frequent_words = get_frequent_words(word_counts)
+    result = analyze_log_file(log_path)
     
-    # Display results
-    print("\nDictionary of words and their count:")
-    print(word_counts)
-    
-    # Check if there are words that occur more than 3 times
-    if frequent_words:
-        print("\nWords that occur more than 3 times:")
-        print(frequent_words)
-    else:
-        print("\nThere are no words that occur more than 3 times in the provided text.")
+    if result:
+        print("Log file analysis results:")
+        for code, count in result.items():
+            print(f"Response code {code}: {count} occurrences")
